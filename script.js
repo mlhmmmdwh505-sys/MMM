@@ -79,79 +79,109 @@ window.onload = function() {
     };
     document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
 };
+// ==========================================
 // 1. المتغيرات الأساسية
+// ==========================================
 let timer = null;
-let timeLeft = (parseInt(localStorage.getItem('savedMins')) || 25) * 60;
 let coins = parseInt(localStorage.getItem('userCoins')) || 1000;
+let timeLeft = (parseInt(localStorage.getItem('savedMins')) || 25) * 60;
 
-// دالة تحويل الأرقام الإنجليزية لعربية (للعرض فقط لو حابب)
-function toArabicNumbers(n) {
-    return n.toString().replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
-}
-
-// 2. دالة تحديث أرقام الكتابة (المحرك الرئيسي)
-function updateUI() {
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    
-    // وعاء الأرقام الكبيرة
-    const display = document.getElementById('pomoDisplay');
-    if (display) {
-        // بنعرضها بتنسيق 00:00 وبنتأكد إنها أرقام "نظيفة"
-        display.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+// ==========================================
+// 2. المحرك الرئيسي لتحديث الشاشة
+// ==========================================
+function updateDisplay() {
+    // تحديث التايمر (بيجرب كل الاحتمالات لـ IDs)
+    const timerElem = document.getElementById('pomoDisplay') || document.querySelector('.timer-display');
+    if (timerElem) {
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        timerElem.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
 
-    // تحديث رصيد النقاط فوق (الشنطة)
-    const coinCount = document.getElementById('coinCount');
-    if (coinCount) {
-        coinCount.innerText = coins;
+    // تحديث النقاط فوق
+    const coinElem = document.getElementById('coinCount') || document.querySelector('.coins span');
+    if (coinElem) {
+        coinElem.innerText = coins;
     }
+    localStorage.setItem('userCoins', coins);
 }
 
-// 3. زرار "تأكيد الإعدادات" (اللي بيحدث الرقم اللي كتبته)
-const saveBtn = document.querySelector('.btn-save');
-if (saveBtn) {
-    saveBtn.onclick = function(e) {
-        e.preventDefault();
-        
-        // قراءة الرقم من خانة "الدقائق"
-        const minsInput = document.querySelector('.minutes-input') || document.querySelector('input[type="number"]');
-        
-        if (minsInput && minsInput.value) {
-            // تحويل أي أرقام مدخلة لأرقام إنجليزية عشان الكود يفهمها
-            const cleanVal = minsInput.value.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
-            const newMins = parseInt(cleanVal);
-            
-            if (!isNaN(newMins)) {
-                timeLeft = newMins * 60;
-                localStorage.setItem('savedMins', newMins);
-                updateUI();
-                alert("تم تحديث الدقائق بنجاح!");
+// ==========================================
+// 3. ربط الأزرار (طريقة الرادار الذكي)
+// ==========================================
+document.addEventListener('click', function(e) {
+    const target = e.target;
+
+    // زرار "ابدأ المهمة"
+    if (target.innerText.includes("ابدأ") || target.classList.contains('btn-start')) {
+        if (timer) return;
+        timer = setInterval(() => {
+            if (timeLeft > 0) {
+                timeLeft--;
+                updateDisplay();
+            } else {
+                clearInterval(timer);
+                timer = null;
+                alert("انتهت المهمة!");
             }
-        }
-    };
-}
+        }, 1000);
+    }
 
-// 4. أزرار التايمر (ابدأ وإعادة ضبط)
-window.startTimer = function() {
-    if (timer) return;
-    timer = setInterval(() => {
-        if (timeLeft > 0) {
-            timeLeft--;
-            updateUI();
+    // زرار "إعادة ضبط"
+    if (target.innerText.includes("إعادة") || target.classList.contains('btn-reset')) {
+        clearInterval(timer);
+        timer = null;
+        timeLeft = (parseInt(localStorage.getItem('savedMins')) || 25) * 60;
+        updateDisplay();
+    }
+
+    // زرار السلة (التصفير)
+    if (target.closest('.reset-mini') || target.innerText.includes("🗑️")) {
+        if (confirm("تصفير النقاط؟")) {
+            coins = 0;
+            updateDisplay();
+        }
+    }
+
+    // متجر الطاقة (المربعات)
+    const shopItem = target.closest('.item');
+    if (shopItem) {
+        const mins = parseInt(shopItem.innerText.match(/\d+/)[0]);
+        const cost = mins * 15;
+        if (coins >= cost) {
+            coins -= cost;
+            timeLeft += (mins * 60);
+            updateDisplay();
         } else {
-            clearInterval(timer);
-            timer = null;
+            alert("نقاطك لا تكفي!");
         }
-    }, 1000);
-};
+    }
+});
 
-window.resetTimer = function() {
-    clearInterval(timer);
-    timer = null;
-    timeLeft = (parseInt(localStorage.getItem('savedMins')) || 25) * 60;
-    updateUI();
-};
+// ==========================================
+// 4. زرار "تأكيد الإعدادات"
+// ==========================================
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-save') || e.target.innerText.includes("تأكيد")) {
+        e.preventDefault();
+        const input = document.querySelector('.minutes-input') || document.querySelector('input[type="number"]');
+        if (input && input.value) {
+            const val = parseInt(input.value);
+            timeLeft = val * 60;
+            localStorage.setItem('savedMins', val);
+            updateDisplay();
+            e.target.innerText = "تم ✅";
+            setTimeout(() => { e.target.innerText = "تأكيد الإعدادات"; }, 2000);
+        }
+    }
+});
 
-// تشغيل عند التحميل
-window.onload = updateUI;
+// ==========================================
+// 5. التشغيل عند فتح الصفحة
+// ==========================================
+window.onload = function() {
+    updateDisplay();
+    // تطبيق اللون المحفوظ
+    const color = localStorage.getItem('themeColor');
+    if (color) document.documentElement.style.setProperty('--primary', color);
+};
