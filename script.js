@@ -1,143 +1,97 @@
-// ==========================================
-// 1. الحالة العامة (Data State)
-// ==========================================
+// 1. البيانات الأساسية
 let timer = null;
-let coins = parseInt(localStorage.getItem('userCoins')) || 1000; 
+let coins = parseInt(localStorage.getItem('userCoins')) || 1000;
 let timeLeft = (parseInt(localStorage.getItem('savedMins')) || 25) * 60;
 
-// ==========================================
-// 2. تحديث الشاشة (UI Update)
-// ==========================================
-function updateAll() {
-    // تحديث التايمر
-    const mins = Math.floor(timeLeft / 60);
-    const secs = timeLeft % 60;
-    const pomoDisplay = document.getElementById('pomoDisplay');
-    if (pomoDisplay) {
-        pomoDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    // تحديث النقاط فوق
-    const coinDisplay = document.getElementById('coinCount');
-    if (coinDisplay) {
-        coinDisplay.innerText = coins;
-    }
+// 2. تحديث الشاشة
+function updateUI() {
+    const coinSpan = document.getElementById('coinCount');
+    const timerSpan = document.getElementById('pomoDisplay');
     
-    // حفظ البيانات
+    if (coinSpan) coinSpan.innerText = coins;
+    if (timerSpan) {
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        timerSpan.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
     localStorage.setItem('userCoins', coins);
 }
 
-// ==========================================
-// 3. التحكم في التايمر (ابدأ / إعادة)
-// ==========================================
-function startTimer() {
+// 3. التحكم بالتايمر
+window.startTimer = function() {
     if (timer) return;
     timer = setInterval(() => {
         if (timeLeft > 0) {
             timeLeft--;
-            updateAll();
+            updateUI();
         } else {
-            stopTimer();
-            alert("أحسنت يا دكتور! انتهت المهمة.");
+            clearInterval(timer);
+            timer = null;
         }
     }, 1000);
-}
+};
 
-function stopTimer() {
+window.resetTimer = function() {
     clearInterval(timer);
     timer = null;
-}
+    timeLeft = (parseInt(localStorage.getItem('savedMins')) || 25) * 60;
+    updateUI();
+};
 
-function resetTimer() {
-    stopTimer();
-    const savedMins = parseInt(localStorage.getItem('savedMins')) || 25;
-    timeLeft = savedMins * 60;
-    updateAll();
-}
+// 4. السلة والمتجر
+window.resetPoints = function() {
+    if(confirm("تصفير النقاط؟")) { coins = 0; updateUI(); }
+};
 
-// ==========================================
-// 4. نظام النقاط والمتجر (Events)
-// ==========================================
-document.addEventListener('click', function(e) {
-    const target = e.target;
-
-    // زرار ابدأ المهمة
-    if (target.innerText.includes("ابدأ") || target.classList.contains('btn-start')) {
-        startTimer();
-    }
-
-    // زرار إعادة ضبط
-    if (target.innerText.includes("إعادة") || target.classList.contains('btn-reset')) {
-        resetTimer();
-    }
-
-    // زرار السلة (تصفير النقاط)
-    if (target.closest('.reset-mini') || target.closest('#trashBtn')) {
-        if (confirm("هل تريد تصفير نقاطك؟")) {
-            coins = 0;
-            updateAll();
-        }
-    }
-
-    // متجر الطاقة (شراء دقائق)
-    const shopItem = target.closest('.item');
-    if (shopItem) {
-        const minutes = parseInt(shopItem.innerText.match(/\d+/)[0]);
-        const cost = minutes * 15;
-        if (coins >= cost) {
-            coins -= cost;
-            timeLeft += (minutes * 60);
-            updateAll();
-        } else {
-            alert(`تحتاج إلى ${cost} نقطة. رصيدك الحالي ${coins}`);
-        }
-    }
-
-    // زرار تأكيد الإعدادات
-    if (target.classList.contains('btn-save') || target.innerText.includes("تأكيد")) {
-        e.preventDefault();
-        const minsInput = document.querySelector('.minutes-input') || document.querySelector('input[type="number"]');
-        const colorInput = document.getElementById('colorPicker');
-        
-        if (minsInput && minsInput.value) {
-            localStorage.setItem('savedMins', minsInput.value);
-            timeLeft = parseInt(minsInput.value) * 60;
-        }
-        if (colorInput) {
-            localStorage.setItem('themeColor', colorInput.value);
-            document.documentElement.style.setProperty('--primary', colorInput.value);
-        }
-        
-        updateAll();
-        target.innerText = "تم ✅";
-        setTimeout(() => target.innerText = "تأكيد الإعدادات", 2000);
+document.addEventListener('click', (e) => {
+    const item = e.target.closest('.item');
+    if (item) {
+        const mins = parseInt(item.innerText.match(/\d+/)[0]);
+        const price = mins * 15;
+        if (coins >= price) {
+            coins -= price;
+            timeLeft += (mins * 60);
+            updateUI();
+        } else { alert("رصيدك غير كافٍ"); }
     }
 });
 
-// ==========================================
-// 5. التشغيل النهائي
-// ==========================================
-window.onload = function() {
-    // استعادة اللون
-    const savedColor = localStorage.getItem('themeColor');
-    if (savedColor) document.documentElement.style.setProperty('--primary', savedColor);
-    
-    // تشغيل الـ UI
-    updateAll();
+// 5. حفظ الإعدادات
+document.querySelector('.btn-save').onclick = function() {
+    const mInput = document.querySelector('.minutes-input');
+    const cInput = document.getElementById('colorPicker');
+    const dInput = document.getElementById('gradDate');
 
-    // تشغيل عداد التخرج (لو موجود)
-    if (document.getElementById('years')) {
-        setInterval(updateGraduationCountdown, 1000);
+    if (mInput.value) {
+        localStorage.setItem('savedMins', mInput.value);
+        timeLeft = mInput.value * 60;
     }
+    if (cInput.value) {
+        localStorage.setItem('themeColor', cInput.value);
+        document.documentElement.style.setProperty('--primary', cInput.value);
+    }
+    if (dInput.value) localStorage.setItem('graduationDate', dInput.value);
+
+    updateUI();
+    this.innerText = "تم ✅";
+    setTimeout(() => this.innerText = "تأكيد الإعدادات", 2000);
 };
 
-function updateGraduationCountdown() {
-    const targetDate = localStorage.getItem('graduationDate');
-    if (!targetDate) return;
-    const diff = new Date(targetDate).getTime() - new Date().getTime();
+// 6. عند التحميل
+window.onload = () => {
+    const color = localStorage.getItem('themeColor');
+    if (color) document.documentElement.style.setProperty('--primary', color);
+    updateUI();
+    setInterval(updateGrad, 1000);
+};
+
+function updateGrad() {
+    const date = localStorage.getItem('graduationDate');
+    if (!date) return;
+    const diff = new Date(date).getTime() - new Date().getTime();
     if (diff > 0) {
-        document.getElementById("years").innerText = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25)).toString().padStart(2, '0');
-        document.getElementById("days").innerText = Math.floor((diff % (1000 * 60 * 60 * 24 * 365.25)) / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
-        document.getElementById("hours").innerText = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
+        document.getElementById('years').innerText = Math.floor(diff / (1000*60*60*24*365));
+        document.getElementById('days').innerText = Math.floor((diff % (1000*60*60*24*365)) / (1000*60*60*24));
+        document.getElementById('hours').innerText = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
     }
 }
