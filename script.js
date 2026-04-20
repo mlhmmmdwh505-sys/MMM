@@ -17,9 +17,13 @@ function updateUI() {
     localStorage.setItem('userCoins', coins);
 }
 
-// 3. التحكم بالتايمر
+// --- كود التايمر المحدث بحسبة (الدقيقة = 3 نقاط) ---
 window.startTimer = function() {
-    if (timer) return;
+    if (timer) return; 
+
+    // حفظ عدد الدقائق الكلي عند البداية لحساب النقاط لاحقاً
+    const sessionMinutes = Math.floor(timeLeft / 60);
+
     timer = setInterval(() => {
         if (timeLeft > 0) {
             timeLeft--;
@@ -27,6 +31,13 @@ window.startTimer = function() {
         } else {
             clearInterval(timer);
             timer = null;
+            
+            // الحسبة الجديدة: كل دقيقة خلصتها بـ 3 نقاط
+            const earnedPoints = sessionMinutes * 3;
+            coins += earnedPoints; 
+            
+            updateUI(); // تحديث الشنطة فوق بالنقاط الجديدة
+            alert(`عاش يا دكتور! خلصت ${sessionMinutes} دقيقة وأخدت ${earnedPoints} نقطة 🌟`);
         }
     }, 1000);
 };
