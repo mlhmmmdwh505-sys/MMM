@@ -1,4 +1,5 @@
 // --- 1. المتغيرات الأساسية ---
+let userName = localStorage.getItem('userName') || "ملهم ممدوح";
 let timer = null;
 let coins = parseInt(localStorage.getItem('userCoins')) || 0;
 // قراءة الدقائق المحفوظة أو البدء بـ 25 دقيقة افتراضياً
@@ -112,6 +113,8 @@ if (saveBtn) {
 
 // --- 8. تشغيل كل شيء عند فتح الصفحة ---
 window.onload = function() {
+    document.getElementById('userNameInput').value = userName;
+document.getElementById('welcomeTitle').innerText = `لوحة تحكم د. ${userName} 🩺`;
     // استعادة اللون المحفوظ
     const savedColor = localStorage.getItem('themeColor');
     if (savedColor) document.documentElement.style.setProperty('--primary', savedColor);
