@@ -57,3 +57,13 @@ body {
 .item:hover { border-color: var(--primary); transform: translateY(-5px); }
 
 .countdown { display: flex; gap: 20px; font-size: 1.5rem; color: var(--primary); }
+input[type="text"]#userNameInput {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--primary);
+    border-radius: 50px;
+    color: white;
+    padding: 8px 15px;
+    font-family: 'Cairo', sans-serif;
+    outline: none;
+    text-align: center;
+}
