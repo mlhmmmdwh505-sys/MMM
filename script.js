@@ -113,6 +113,25 @@ if (saveBtn) {
 
 // --- 8. تشغيل كل شيء عند فتح الصفحة ---
 window.onload = function() {
+    document.getElementById('mainSaveBtn').addEventListener('click', () => {
+    // حفظ الاسم الجديد
+    const newName = document.getElementById('userNameInput').value.trim();
+    if (newName !== "") {
+        userName = newName;
+        localStorage.setItem('userName', userName);
+        document.getElementById('welcomeTitle').innerText = `لوحة تحكم د. ${userName} 🩺`;
+    }
+
+    // الأكواد القديمة (اللون والتاريخ)
+    const newColor = document.getElementById('colorPicker').value;
+    document.documentElement.style.setProperty('--primary', newColor);
+    localStorage.setItem('themeColor', newColor);
+    graduationDate = document.getElementById('gradDateInput').value;
+    localStorage.setItem('gradDate', graduationDate);
+    
+    if (!isRunning) resetTimer();
+    alert("تم حفظ الإعدادات بنجاح يا دكتور!");
+});
     document.getElementById('userNameInput').value = userName;
 document.getElementById('welcomeTitle').innerText = `لوحة تحكم د. ${userName} 🩺`;
     // استعادة اللون المحفوظ
